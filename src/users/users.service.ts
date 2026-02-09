@@ -1,7 +1,22 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { User } from './user.entity';
+import { IsEmail, IsString, MinLength } from 'class-validator';
+import { validateOrReject } from 'class-validator';
+
+export class CreateUserDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(1)
+  name: string;
+
+  @IsString()
+  @MinLength(8)
+  password: string;
+}
 
 @Injectable()
 export class UsersService {
@@ -12,6 +27,18 @@ export class UsersService {
   ) {}
 
   async createUser(userData: Partial<User>): Promise<User> {
+    // Validate input data
+    const createUserDto = new CreateUserDto();
+    Object.assign(createUserDto, userData);
+    
+    try {
+      await validateOrReject(createUserDto);
+    } catch (validationErrors) {
+      throw new BadRequestException(
+        validationErrors.map(error => Object.values(error.constraints || {}).join(', '))
+      );
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -36,11 +63,8 @@ export class UsersService {
     }
   }
 
-  // ✅ Use query builder for complex queries
+  // Return all users since there's no isActive field in the entity
   async findActiveUsers(): Promise<User[]> {
-    return this.usersRepository
-      .createQueryBuilder('user')
-      .where('user.isActive = :isActive', { isActive: true })
-      .getMany();
+    return this.usersRepository.find();
   }
 }

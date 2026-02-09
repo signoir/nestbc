@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../src/app.module';
+import { AppModule } from '../../src/app.module';
 import * as request from 'supertest';
 
-describe('AppController (e2e)', () => {
+describe('HealthController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -15,13 +15,16 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET) should return welcome message', async () => {
+  it('/health (GET) should return health status', async () => {
     return request(app.getHttpServer())
-      .get('/')
+      .get('/health')
       .expect(200)
-      .expect((res) => {
-        expect(typeof res.text).toBe('string');
-        expect(res.text.length).toBeGreaterThan(0);
+      .expect((response) => {
+        expect(response.body).toBeDefined();
+        expect(response.body.status).toBe('ok');
+        // Verify that the database health check is included
+        expect(response.body.info).toBeDefined();
+        expect(response.body.info.database).toBeDefined();
       });
   });
 
