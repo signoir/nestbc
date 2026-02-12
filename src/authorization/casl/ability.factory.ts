@@ -43,6 +43,24 @@ export class AbilityFactory {
     // Users can read their own profile
     can(Action.Read, 'User', { id: user.id });
 
+    // Users can delete their own account (with additional checks)
+    can(Action.Delete, 'User', { id: user.id });
+
+    // Add conditional permissions based on user attributes
+    if (user.attributes) {
+      for (const attribute of user.attributes) {
+        if (attribute.attributeKey === 'department' && attribute.attributeValue === 'admin') {
+          // Admin department users can manage all users
+          can(Action.Manage, 'User');
+        }
+        
+        if (attribute.attributeKey === 'subscription' && attribute.attributeValue === 'premium') {
+          // Premium users get additional permissions
+          can(Action.Read, 'PremiumContent');
+        }
+      }
+    }
+
     return build({
       detectSubjectType: (item) =>
         item.constructor as ExtractSubjectType<Subjects>,
