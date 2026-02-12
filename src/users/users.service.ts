@@ -1,20 +1,12 @@
-import { Injectable, InternalServerErrorException, BadRequestException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { User } from './user.entity';
-import { IsEmail, IsString, MinLength } from 'class-validator';
 import { validateOrReject } from 'class-validator';
 
 export class CreateUserDto {
-  @IsEmail()
   email: string;
-
-  @IsString()
-  @MinLength(1)
   name: string;
-
-  @IsString()
-  @MinLength(8)
   password: string;
 }
 
@@ -30,7 +22,7 @@ export class UsersService {
     // Validate input data
     const createUserDto = new CreateUserDto();
     Object.assign(createUserDto, userData);
-    
+
     try {
       await validateOrReject(createUserDto);
     } catch (validationErrors) {
@@ -61,6 +53,27 @@ export class UsersService {
     } finally {
       await queryRunner.release(); // ✅ Release connection back to pool
     }
+  }
+
+  async findOne(id: string): Promise<User> {
+    const user = await this.usersRepository.findOneBy({ id });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
+  }
+
+  async update(id: string, updateUserDto: Partial<User>): Promise<User> {
+    const user = await this.findOne(id); // Verify user exists first
+    
+    await this.usersRepository.update(id, updateUserDto);
+    return this.findOne(id); // Return updated user
+  }
+
+  async delete(id: string): Promise<void> {
+    const user = await this.findOne(id); // Verify user exists first
+    
+    await this.usersRepository.delete(id);
   }
 
   // Return all users since there's no isActive field in the entity
