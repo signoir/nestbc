@@ -3,12 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { User } from './user.entity';
 import { validateOrReject } from 'class-validator';
-
-export class CreateUserDto {
-  email: string;
-  name: string;
-  password: string;
-}
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -65,14 +60,14 @@ export class UsersService {
 
   async update(id: string, updateUserDto: Partial<User>): Promise<User> {
     const user = await this.findOne(id); // Verify user exists first
-    
+
     await this.usersRepository.update(id, updateUserDto);
     return this.findOne(id); // Return updated user
   }
 
   async delete(id: string): Promise<void> {
     const user = await this.findOne(id); // Verify user exists first
-    
+
     await this.usersRepository.delete(id);
   }
 

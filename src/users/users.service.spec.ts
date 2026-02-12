@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { UsersService, CreateUserDto } from './users.service';
+import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { DataSource } from 'typeorm';
+import { CreateUserDto } from './dto/create-user.dto';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -11,11 +12,12 @@ describe('UsersService', () => {
 
   beforeEach(async () => {
     mockRepository = {
-      findOne: jest.fn(),
+      findOneBy: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       find: jest.fn(), // Add the find method that's used in findActiveUsers
-      clear: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
       createQueryBuilder: jest.fn(() => ({
         where: jest.fn().mockReturnThis(),
         getMany: jest.fn(),
@@ -64,7 +66,7 @@ describe('UsersService', () => {
     it('should create a new user', async () => {
       const userData = { email: 'test@example.com', name: 'Test User', password: 'securePassword123' };
       const expectedResult = { id: '1', ...userData };
-      
+
       // Mock the query runner behavior
       const mockQueryRunner: any = (service as any).dataSource.createQueryRunner();
       mockQueryRunner.manager.findOne.mockResolvedValue(null); // No existing user
@@ -100,6 +102,49 @@ describe('UsersService', () => {
       const result = await service.findActiveUsers();
       expect(result).toEqual(users);
       expect(mockRepository.find).toHaveBeenCalled();
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a user when found', async () => {
+      const user = { id: '1', email: 'test@example.com', name: 'Test User' };
+      mockRepository.findOneBy.mockResolvedValue(user);
+
+      const result = await service.findOne('1');
+      expect(result).toEqual(user);
+    });
+
+    it('should throw NotFoundException when user not found', async () => {
+      mockRepository.findOneBy.mockResolvedValue(null);
+
+      await expect(service.findOne('1')).rejects.toThrow();
+    });
+  });
+
+  describe('update', () => {
+    it('should update and return the user', async () => {
+      const user = { id: '1', email: 'test@example.com', name: 'Test User' };
+      const updatedData = { name: 'Updated Name' };
+      const updatedUser = { ...user, ...updatedData };
+
+      jest.spyOn(service, 'findOne').mockResolvedValueOnce(user as any).mockResolvedValueOnce(updatedUser as any);
+      mockRepository.update.mockResolvedValue(undefined);
+
+      const result = await service.update('1', updatedData);
+      expect(result).toEqual(updatedUser);
+      expect(mockRepository.update).toHaveBeenCalledWith('1', updatedData);
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete the user', async () => {
+      const user = { id: '1', email: 'test@example.com', name: 'Test User' };
+
+      jest.spyOn(service, 'findOne').mockResolvedValue(user as any);
+      mockRepository.delete.mockResolvedValue(undefined);
+
+      await service.delete('1');
+      expect(mockRepository.delete).toHaveBeenCalledWith('1');
     });
   });
 });
