@@ -3,7 +3,9 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { DataSource } from 'typeorm';
-import { CreateUserDto } from './dto/create-user.dto';
+import { AppAbility } from '../authorization/casl/ability.factory';
+import { Action } from '../authorization/casl/actions.enum';
+import { ForbiddenException } from '@nestjs/common';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -94,17 +96,6 @@ describe('UsersService', () => {
     });
   });
 
-  describe('findActiveUsers', () => {
-    it('should return all users', async () => {
-      const users = [{ id: '1', email: 'user@example.com', name: 'Test User' }];
-      mockRepository.find.mockResolvedValue(users);
-
-      const result = await service.findActiveUsers();
-      expect(result).toEqual(users);
-      expect(mockRepository.find).toHaveBeenCalled();
-    });
-  });
-
   describe('findOne', () => {
     it('should return a user when found', async () => {
       const user = { id: '1', email: 'test@example.com', name: 'Test User' };
@@ -118,6 +109,61 @@ describe('UsersService', () => {
       mockRepository.findOneBy.mockResolvedValue(null);
 
       await expect(service.findOne('1')).rejects.toThrow();
+    });
+
+    it('should check authorization when ability is provided', async () => {
+      const user = { id: '1', email: 'test@example.com', name: 'Test User' };
+      mockRepository.findOneBy.mockResolvedValue(user);
+
+      // Mock ability that can read User
+      const mockAbility: Partial<AppAbility> = {
+        can: jest.fn().mockReturnValue(true),
+      };
+
+      const result = await service.findOne('1', mockAbility as AppAbility);
+      expect(result).toEqual(user);
+      expect(mockAbility.can).toHaveBeenCalledWith(Action.Read, 'User');
+    });
+
+    it('should throw ForbiddenException when user lacks permission', async () => {
+      const mockAbility: Partial<AppAbility> = {
+        can: jest.fn().mockReturnValue(false),
+      };
+
+      await expect(service.findOne('1', mockAbility as AppAbility)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('findActiveUsers', () => {
+    it('should return all users', async () => {
+      const users = [{ id: '1', email: 'user@example.com', name: 'Test User' }];
+      mockRepository.find.mockResolvedValue(users);
+
+      const result = await service.findActiveUsers();
+      expect(result).toEqual(users);
+      expect(mockRepository.find).toHaveBeenCalled();
+    });
+
+    it('should check authorization when ability is provided', async () => {
+      const users = [{ id: '1', email: 'user@example.com', name: 'Test User' }];
+      mockRepository.find.mockResolvedValue(users);
+
+      // Mock ability that can read User
+      const mockAbility: Partial<AppAbility> = {
+        can: jest.fn().mockReturnValue(true),
+      };
+
+      const result = await service.findActiveUsers(mockAbility as AppAbility);
+      expect(result).toEqual(users);
+      expect(mockAbility.can).toHaveBeenCalledWith(Action.Read, 'User');
+    });
+
+    it('should throw ForbiddenException when user lacks permission', async () => {
+      const mockAbility: Partial<AppAbility> = {
+        can: jest.fn().mockReturnValue(false),
+      };
+
+      await expect(service.findActiveUsers(mockAbility as AppAbility)).rejects.toThrow(ForbiddenException);
     });
   });
 
