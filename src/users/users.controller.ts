@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UsePipes, ValidationPipe, UseGuards, HttpStatus } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -7,15 +7,17 @@ import { RequireRule } from '../auth/decorators/require-rule.decorator';
 import { Action } from '../authorization/casl/actions.enum';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AppAbility } from '../authorization/casl/ability.factory';
+import { AbilityGuard } from '../auth/guards/ability.guard';
+import { RequireAbility } from '../auth/decorators/require-ability.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @UseGuards(JwtAuthGuard, AuthorizationGuard)
   @RequireRule({ action: Action.Create, subject: 'User' })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async createUser(@Body() createUserDto: Partial<User>) {
     return this.usersService.createUser(createUserDto);
   }
@@ -28,21 +30,21 @@ export class UsersController {
     @CurrentUser() user?: User,
   ) {
     // Get the ability from the request (would be added by the AuthorizationGuard)
-    const ability = (user as any).ability || undefined;
+    const ability = (user as any)?.ability || undefined;
     return this.usersService.findOne(id, ability, user);
   }
 
   @Put(':id')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @UseGuards(JwtAuthGuard, AuthorizationGuard)
   @RequireRule({ action: Action.Update, subject: 'User' })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: Partial<User>,
     @CurrentUser() user?: User,
   ) {
     // Get the ability from the request (would be added by the AuthorizationGuard)
-    const ability = (user as any).ability || undefined;
+    const ability = (user as any)?.ability || undefined;
     return this.usersService.update(id, updateUserDto, ability, user);
   }
 
@@ -54,18 +56,18 @@ export class UsersController {
     @CurrentUser() user?: User,
   ) {
     // Get the ability from the request (would be added by the AuthorizationGuard)
-    const ability = (user as any).ability || undefined;
+    const ability = (user as any)?.ability || undefined;
     return this.usersService.delete(id, ability, user);
   }
 
   @Get('active')
-  @UseGuards(JwtAuthGuard, AuthorizationGuard)
-  @RequireRule({ action: Action.Read, subject: 'User' })
+  @UseGuards(JwtAuthGuard, AbilityGuard)
+  @RequireAbility({ action: 'read', subject: 'User' })
   async getActiveUsers(
     @CurrentUser() user?: User,
   ) {
-    // Get the ability from the request (would be added by the AuthorizationGuard)
-    const ability = (user as any).ability || undefined;
+    // Get the ability from the request (would be added by the AbilityGuard)
+    const ability = (user as any)?.ability || undefined;
     return this.usersService.findActiveUsers(ability);
   }
 
@@ -76,7 +78,7 @@ export class UsersController {
     @CurrentUser() user?: User,
   ) {
     // Get the ability from the request (would be added by the AuthorizationGuard)
-    const ability = (user as any).ability || undefined;
+    const ability = (user as any)?.ability || undefined;
     return this.usersService.findAll(ability);
   }
 
