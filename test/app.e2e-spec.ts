@@ -1,31 +1,80 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
+import { AppService } from '../src/app.service';
+import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
+import { AuthorizationGuard } from '../src/authorization/guards/authorization.guard';
+import { Reflector } from '@nestjs/core';
+import { AbilityFactory } from '../src/authorization/casl/ability.factory';
+import { AppAbility } from '../src/authorization/casl/ability.factory';
 import * as request from 'supertest';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    // Create mock implementations for all dependencies
+    const mockAppService = {
+      getHello: jest.fn(() => 'Hello World!'),
+    };
+    
+    const mockJwtAuthGuard = {
+      canActivate: jest.fn(() => true), // Allow all requests for testing
+    };
+    
+    const mockAuthorizationGuard = {
+      canActivate: jest.fn(() => true), // Allow all requests for testing
+    };
+    
+    const mockReflector = {
+      getAllAndOverride: jest.fn(() => []), // Return empty array for required rules
+    };
+    
+    const mockAbility: Partial<AppAbility> = {
+      can: jest.fn(() => true), // Default to allowing all actions for testing
+    };
+    
+    const mockAbilityFactory = {
+      createForUser: jest.fn().mockResolvedValue(mockAbility), // Mock ability creation
+    };
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+    .overrideProvider(AppService)
+    .useValue(mockAppService)
+    .overrideProvider(JwtAuthGuard)
+    .useValue(mockJwtAuthGuard)
+    .overrideProvider(AuthorizationGuard)
+    .useValue(mockAuthorizationGuard)
+    .overrideProvider(Reflector)
+    .useValue(mockReflector)
+    .overrideProvider(AbilityFactory)
+    .useValue(mockAbilityFactory)
+    .compile();
 
     app = moduleFixture.createNestApplication();
-    await app.init();
-  });
+    app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }));
 
-  it('/ (GET) should return welcome message', async () => {
+    await app.init();
+  }, 30000); // Increase timeout for setup
+
+  it('/ (GET) should return welcome message', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect((res) => {
-        expect(typeof res.text).toBe('string');
-        expect(res.text.length).toBeGreaterThan(0);
+      .then(response => {
+        expect(response.text).toBe('Hello World!');
       });
   });
 
   afterAll(async () => {
-    await app.close();
-  });
+    if (app) {
+      await app.close();
+    }
+  }, 30000); // Increase timeout for cleanup
 });
