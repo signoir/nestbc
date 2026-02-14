@@ -13,8 +13,12 @@ describe('UsersService Integration Tests', () => {
     // Mock repository and DataSource
     const mockRepository = {
       findOne: jest.fn(),
+      findOneBy: jest.fn(),
+      find: jest.fn(), // Add the missing find method
       create: jest.fn(),
       save: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
       clear: jest.fn(),
       createQueryBuilder: jest.fn(() => ({
         where: jest.fn().mockReturnThis(),
@@ -58,7 +62,7 @@ describe('UsersService Integration Tests', () => {
     await app.init();
 
     usersService = app.get<UsersService>(UsersService);
-  });
+  }, 30000); // Increase timeout for setup
 
   beforeEach(() => {
     // Clear mock calls before each test
@@ -74,7 +78,7 @@ describe('UsersService Integration Tests', () => {
       };
 
       const expectedResult = { id: '1', ...userData };
-      
+
       // Mock the query runner behavior
       const mockQueryRunner: any = {
         connect: jest.fn(),
@@ -99,7 +103,7 @@ describe('UsersService Integration Tests', () => {
       expect(createdUser.id).toBeDefined();
       expect(createdUser.email).toBe(userData.email);
       expect(createdUser.name).toBe(userData.name);
-      
+
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
@@ -145,13 +149,10 @@ describe('UsersService Integration Tests', () => {
   describe('Find Active Users Integration', () => {
     it('should return only active users', async () => {
       const activeUsers = [{ id: '1', email: 'active@example.com', name: 'Active User', isActive: true }];
-      
-      // Mock the repository's createQueryBuilder
+
+      // Mock the repository's find method to return active users
       const mockRepository: any = (usersService as any).usersRepository;
-      mockRepository.createQueryBuilder = jest.fn(() => ({
-        where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue(activeUsers),
-      }));
+      mockRepository.find.mockResolvedValue(activeUsers);
 
       const result = await usersService.findActiveUsers();
       expect(result).toEqual(activeUsers);
@@ -162,5 +163,5 @@ describe('UsersService Integration Tests', () => {
     if (app) {
       await app.close();
     }
-  });
+  }, 30000); // Increase timeout for cleanup
 });

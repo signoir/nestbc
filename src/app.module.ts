@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { HealthModule } from './health/health.module';
+import { AuthorizationModule } from './authorization/authorization.module';
 
 @Module({
   imports: [
@@ -23,11 +24,12 @@ import { HealthModule } from './health/health.module';
         ...configService.get('database'),
       }),
     }),
-    
+
+    AuthorizationModule, // ✅ Import AuthorizationModule to make it globally available
     UsersModule,
     HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

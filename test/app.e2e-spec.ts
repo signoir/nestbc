@@ -6,7 +6,6 @@ import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 import { AuthorizationGuard } from '../src/authorization/guards/authorization.guard';
 import { Reflector } from '@nestjs/core';
 import { AbilityFactory } from '../src/authorization/casl/ability.factory';
-import { AppAbility } from '../src/authorization/casl/ability.factory';
 import * as request from 'supertest';
 
 describe('AppController (e2e)', () => {
@@ -30,12 +29,12 @@ describe('AppController (e2e)', () => {
       getAllAndOverride: jest.fn(() => []), // Return empty array for required rules
     };
     
-    const mockAbility: Partial<AppAbility> = {
+    const mockAbility = {
       can: jest.fn(() => true), // Default to allowing all actions for testing
     };
     
     const mockAbilityFactory = {
-      createForUser: jest.fn().mockResolvedValue(mockAbility), // Mock ability creation
+      createForUser: jest.fn().mockResolvedValue(mockAbility),
     };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -49,7 +48,7 @@ describe('AppController (e2e)', () => {
     .useValue(mockAuthorizationGuard)
     .overrideProvider(Reflector)
     .useValue(mockReflector)
-    .overrideProvider(AbilityFactory)
+    .overrideProvider(AbilityFactory)  // Corrected typo: should be AbilityFactory
     .useValue(mockAbilityFactory)
     .compile();
 

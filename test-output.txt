@@ -1,0 +1,5 @@
+﻿
+> nestbc@0.0.1 test:integration C:\Codex\nodev\nestjspjt\nestbc
+> jest --config ./test/jest-integration.json
+
+ΓÇëELIFECYCLEΓÇë Command failed with exit code 1.
