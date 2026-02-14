@@ -12,7 +12,7 @@ import { RequireAbility } from '../auth/decorators/require-ability.decorator';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   @UseGuards(JwtAuthGuard, AuthorizationGuard)
@@ -20,6 +20,35 @@ export class UsersController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async createUser(@Body() createUserDto: Partial<User>) {
     return this.usersService.createUser(createUserDto);
+  }
+
+  @Get('active')
+  @UseGuards(JwtAuthGuard, AbilityGuard)
+  @RequireAbility({ action: 'read', subject: 'User' })
+  async getActiveUsers(
+    @CurrentUser() user?: User,
+  ) {
+    // Get the ability from the request (would be added by the AbilityGuard)
+    const ability = (user as any)?.ability || undefined;
+    return this.usersService.findActiveUsers(ability);
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard) // Only requires authentication, not specific permissions
+  async getProfile(@CurrentUser() user: User) {
+    // Return user's own profile
+    return user;
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @RequireRule({ action: Action.Read, subject: 'User' })
+  async getAllUsers(
+    @CurrentUser() user?: User,
+  ) {
+    // Get the ability from the request (would be added by the AuthorizationGuard)
+    const ability = (user as any)?.ability || undefined;
+    return this.usersService.findAll(ability);
   }
 
   @Get(':id')
@@ -58,34 +87,5 @@ export class UsersController {
     // Get the ability from the request (would be added by the AuthorizationGuard)
     const ability = (user as any)?.ability || undefined;
     return this.usersService.delete(id, ability, user);
-  }
-
-  @Get('active')
-  @UseGuards(JwtAuthGuard, AbilityGuard)
-  @RequireAbility({ action: 'read', subject: 'User' })
-  async getActiveUsers(
-    @CurrentUser() user?: User,
-  ) {
-    // Get the ability from the request (would be added by the AbilityGuard)
-    const ability = (user as any)?.ability || undefined;
-    return this.usersService.findActiveUsers(ability);
-  }
-
-  @Get()
-  @UseGuards(JwtAuthGuard, AuthorizationGuard)
-  @RequireRule({ action: Action.Read, subject: 'User' })
-  async getAllUsers(
-    @CurrentUser() user?: User,
-  ) {
-    // Get the ability from the request (would be added by the AuthorizationGuard)
-    const ability = (user as any)?.ability || undefined;
-    return this.usersService.findAll(ability);
-  }
-
-  @Get('profile')
-  @UseGuards(JwtAuthGuard) // Only requires authentication, not specific permissions
-  async getProfile(@CurrentUser() user: User) {
-    // Return user's own profile
-    return user;
   }
 }
