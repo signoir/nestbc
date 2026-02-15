@@ -7,6 +7,8 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { HealthModule } from './health/health.module';
 import { AuthorizationModule } from './authorization/authorization.module';
+import { SeederModule } from './seeds/seeder.module';
+import { CommandModule } from 'nestjs-command';
 
 @Module({
   imports: [
@@ -15,6 +17,9 @@ import { AuthorizationModule } from './authorization/authorization.module';
       isGlobal: true,
       load: [databaseConfig],
     }),
+
+    // ✅ Enable command functionality
+    CommandModule,
 
     // ✅ TypeORM with async configuration
     TypeOrmModule.forRootAsync({
@@ -28,6 +33,7 @@ import { AuthorizationModule } from './authorization/authorization.module';
     AuthorizationModule, // ✅ Import AuthorizationModule to make it globally available
     UsersModule,
     HealthModule,
+    SeederModule, // ✅ Import SeederModule for database seeding
   ],
   controllers: [AppController],
   providers: [AppService],

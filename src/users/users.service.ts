@@ -86,6 +86,11 @@ export class UsersService {
     throw new ForbiddenException(`Insufficient permissions to read user ${id}`);
   }
 
+  async findOneByEmail(email: string): Promise<User | null> {
+    // Find a user by email without authorization checks (for internal use)
+    return await this.usersRepository.findOneBy({ email });
+  }
+
   async update(id: string, updateUserDto: Partial<User>, ability?: AppAbility, currentUser?: User): Promise<User> {
     // If no ability is provided, just update the user (for internal use)
     if (!ability) {
