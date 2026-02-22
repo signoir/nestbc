@@ -3,7 +3,7 @@ import { UsersService } from '../users/users.service';
 import { User } from '../users/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { Role } from '../authorization/entities/role.entity';
+import { Role } from '../auth/authorization/entities/role.entity';
 
 @Injectable()
 export class AdminUserSeeder {

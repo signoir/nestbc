@@ -6,7 +6,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { HealthModule } from './health/health.module';
-import { AuthorizationModule } from './authorization/authorization.module';
 import { SeederModule } from './seeds/seeder.module';
 import { AuthModule } from './auth/auth.module';
 import { CommandModule } from 'nestjs-command';
@@ -31,11 +30,10 @@ import { CommandModule } from 'nestjs-command';
       }),
     }),
 
-    AuthorizationModule, // ✅ Import AuthorizationModule to make it globally available
+    AuthModule, // ✅ Import AuthModule (includes both authentication and authorization)
     UsersModule,
     HealthModule,
     SeederModule, // ✅ Import SeederModule for database seeding
-    AuthModule, // ✅ Import AuthModule for authentication
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,7 +5,7 @@ import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
 import { UserAttribute } from './entities/user-attribute.entity';
 import { AuthorizationGuard } from './guards/authorization.guard';
-import { AbilityGuard } from '../auth/guards/ability.guard';
+import { AbilityGuard } from '../shared/guards/ability.guard';
 
 @Global()
 @Module({

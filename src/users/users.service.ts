@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { User } from './user.entity';
 import { validateOrReject } from 'class-validator';
-import { AppAbility } from '../authorization/casl/ability.factory';
-import { Action } from '../authorization/casl/actions.enum';
+import { AppAbility } from '../auth/authorization/casl/ability.factory';
+import { Action } from '../auth/authorization/casl/actions.enum';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()

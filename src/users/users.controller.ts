@@ -1,14 +1,14 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UsePipes, ValidationPipe, UseGuards, HttpStatus } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './user.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AuthorizationGuard } from '../authorization/guards/authorization.guard';
-import { RequireRule } from '../auth/decorators/require-rule.decorator';
-import { Action } from '../authorization/casl/actions.enum';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { AppAbility } from '../authorization/casl/ability.factory';
-import { AbilityGuard } from '../auth/guards/ability.guard';
-import { RequireAbility } from '../auth/decorators/require-ability.decorator';
+import { JwtAuthGuard } from '../auth/shared/guards/jwt-auth.guard';
+import { AuthorizationGuard } from '../auth/authorization/guards/authorization.guard';
+import { RequireRule } from '../auth/shared/decorators/require-rule.decorator';
+import { Action } from '../auth/authorization/casl/actions.enum';
+import { CurrentUser } from '../auth/shared/decorators/current-user.decorator';
+import { AppAbility } from '../auth/authorization/casl/ability.factory';
+import { AbilityGuard } from '../auth/shared/guards/ability.guard';
+import { RequireAbility } from '../auth/shared/decorators/require-ability.decorator';
 
 @Controller('users')
 export class UsersController {

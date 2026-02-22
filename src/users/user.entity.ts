@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { Role } from '../authorization/entities/role.entity';
-import { UserAttribute } from '../authorization/entities/user-attribute.entity';
+import { Role } from '../auth/authorization/entities/role.entity';
+import { UserAttribute } from '../auth/authorization/entities/user-attribute.entity';
 
 @Entity('users') // Explicit table name
 export class User {

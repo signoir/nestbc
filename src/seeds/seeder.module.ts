@@ -3,8 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseSeeder } from './database.seeder';
 import { AdminUserSeeder } from './admin-user.seeder';
 import { UsersModule } from '../users/users.module';
-import { Role } from '../authorization/entities/role.entity';
-import { Permission } from '../authorization/entities/permission.entity';
+import { Role } from '../auth/authorization/entities/role.entity';
+import { Permission } from '../auth/authorization/entities/permission.entity';
 import { SeedCommand } from './seed.command';
 
 @Module({

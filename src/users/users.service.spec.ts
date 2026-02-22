@@ -3,8 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { DataSource } from 'typeorm';
-import { AppAbility } from '../authorization/casl/ability.factory';
-import { Action } from '../authorization/casl/actions.enum';
+import { AppAbility } from '../auth/authorization/casl/ability.factory';
+import { Action } from '../auth/authorization/casl/actions.enum';
 import { ForbiddenException } from '@nestjs/common';
 
 describe('UsersService', () => {
