@@ -1,4 +1,4 @@
-import { Command, Commander } from 'nestjs-command';
+import { Command } from 'nestjs-command';
 import { Injectable } from '@nestjs/common';
 import { DatabaseSeeder } from './database.seeder';
 import { AdminUserSeeder } from './admin-user.seeder';
