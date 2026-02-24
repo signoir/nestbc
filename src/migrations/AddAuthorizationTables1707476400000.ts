@@ -46,6 +46,28 @@ export class AddAuthorizationTables1707476400000 implements MigrationInterface {
   }
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // ============================================
+    // STEP 1: Create users table if it doesn't exist
+    // ============================================
+    if (await this.tableExists(queryRunner, 'users')) {
+      console.log('Table "users" already exists, skipping creation');
+    } else {
+      await queryRunner.query(`
+        CREATE TABLE "users" (
+          "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+          "email" character varying NOT NULL,
+          "name" character varying NOT NULL,
+          "password" character varying NOT NULL,
+          "isActive" boolean NOT NULL DEFAULT true,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "UQ_users_email" UNIQUE ("email"),
+          CONSTRAINT "PK_users_id" PRIMARY KEY ("id")
+        )
+      `);
+      console.log('Table "users" created successfully');
+    }
+
     // Create roles table
     if (await this.tableExists(queryRunner, 'roles')) {
       console.log('Table "roles" already exists, skipping creation');
@@ -83,7 +105,7 @@ export class AddAuthorizationTables1707476400000 implements MigrationInterface {
       console.log('Table "permissions" created successfully');
     }
 
-    // Create user_attributes table
+    // Create user_attributes table (depends on users table)
     if (await this.tableExists(queryRunner, 'user_attributes')) {
       console.log('Table "user_attributes" already exists, skipping creation');
     } else {
@@ -202,11 +224,13 @@ export class AddAuthorizationTables1707476400000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE "role_permissions"`);
-    await queryRunner.query(`DROP TABLE "user_roles"`);
-    await queryRunner.query(`DROP TABLE "resource_attributes"`);
-    await queryRunner.query(`DROP TABLE "user_attributes"`);
-    await queryRunner.query(`DROP TABLE "permissions"`);
-    await queryRunner.query(`DROP TABLE "roles"`);
+    // Drop in reverse order of creation (respecting foreign key dependencies)
+    await queryRunner.query(`DROP TABLE IF EXISTS "role_permissions"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "user_roles"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "resource_attributes"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "user_attributes"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "permissions"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "roles"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "users"`);
   }
 }
