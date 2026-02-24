@@ -34,19 +34,23 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const user = await this.validateUser(loginDto.email, loginDto.password);
-    
+
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { 
-      email: user.email, 
+    const payload = {
+      email: user.email,
       sub: user.id,
       name: user.name,
     };
 
+    const expiresIn = (this.configService.get('JWT_EXPIRES_IN') as string) || '1d';
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, {
+        expiresIn: expiresIn as any,
+      }),
       user: {
         id: user.id,
         email: user.email,
@@ -79,14 +83,18 @@ export class AuthService {
     const user = await this.usersService.createUser(userData);
 
     // Generate JWT token
-    const payload = { 
-      email: user.email, 
+    const payload = {
+      email: user.email,
       sub: user.id,
       name: user.name,
     };
 
+    const expiresIn = (this.configService.get('JWT_EXPIRES_IN') as string) || '1d';
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, {
+        expiresIn: expiresIn as any,
+      }),
       user: {
         id: user.id,
         email: user.email,
