@@ -4,6 +4,7 @@ import { User } from '../users/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Role } from '../auth/authorization/entities/role.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AdminUserSeeder {
@@ -21,10 +22,14 @@ export class AdminUserSeeder {
     }
 
     // Create admin user with strong password
+    const plainPassword = 'SuperSecurePassword123!';
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(plainPassword, saltRounds);
+
     const adminUserData = {
       email: 'admin@example.com',
       name: 'Administrator',
-      password: 'SuperSecurePassword123!',
+      password: hashedPassword,
       isActive: true,
     };
 
