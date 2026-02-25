@@ -30,7 +30,7 @@ export class Role {
     example: 'Administrator with full access',
     required: false,
   })
-  @Column()
+  @Column({ nullable: true })
   description: string;
 
   @ApiProperty({
