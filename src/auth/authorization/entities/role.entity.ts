@@ -1,24 +1,51 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToMany, JoinTable, CreateDateColumn } from 'typeorm';
-import { User } from '../../../users/user.entity';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToMany,
+  JoinTable,
+  CreateDateColumn,
+} from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 import { Permission } from './permission.entity';
 
 @Entity('roles')
 export class Role {
+  @ApiProperty({
+    description: 'Role unique identifier',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @ApiProperty({
+    description: 'Role name (unique)',
+    example: 'admin',
+  })
   @Column({ unique: true })
   name: string;
 
-  @Column({ nullable: true })
+  @ApiProperty({
+    description: 'Role description',
+    example: 'Administrator with full access',
+    required: false,
+  })
+  @Column()
   description: string;
 
+  @ApiProperty({
+    description: 'Whether this is the default role for new users',
+    example: false,
+    default: false,
+  })
   @Column({ default: false })
   isDefault: boolean;
 
-  @ManyToMany(() => User, user => user.roles)
-  users: User[];
-
+  @ApiProperty({
+    description: 'Role permissions',
+    type: () => [Permission],
+    required: false,
+  })
   @ManyToMany(() => Permission, { eager: true })
   @JoinTable({
     name: 'role_permissions',
@@ -27,6 +54,10 @@ export class Role {
   })
   permissions: Permission[];
 
+  @ApiProperty({
+    description: 'Role creation timestamp',
+    example: '2026-02-12T10:00:00.000Z',
+  })
   @CreateDateColumn()
   createdAt: Date;
 }

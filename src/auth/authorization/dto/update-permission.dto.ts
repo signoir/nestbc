@@ -1,23 +1,8 @@
-import { IsString, IsOptional, IsBoolean, IsObject } from 'class-validator';
+import { PartialType } from '@nestjs/swagger';
+import { CreatePermissionDto } from './create-permission.dto';
 
-export class UpdatePermissionDto {
-  @IsString()
-  @IsOptional()
-  action?: string;
-
-  @IsString()
-  @IsOptional()
-  subject?: string;
-
-  @IsObject()
-  @IsOptional()
-  conditions?: Record<string, any>;
-
-  @IsBoolean()
-  @IsOptional()
-  inverted?: boolean;
-
-  @IsString()
-  @IsOptional()
-  reason?: string;
-}
+/**
+ * UpdatePermissionDto - All properties are optional
+ * Uses PartialType to inherit from CreatePermissionDto
+ */
+export class UpdatePermissionDto extends PartialType(CreatePermissionDto) {}
