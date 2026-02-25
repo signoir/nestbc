@@ -1,19 +1,45 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { DataSource } from 'typeorm';
 import { AuthService } from './auth.service';
 import { UsersService } from '../../users/users.service';
+import { RolesService } from '../authorization/roles.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let authService: AuthService;
   let usersService: UsersService;
+  let rolesService: RolesService;
 
   const mockUsersService = {
     findOneByEmail: jest.fn(),
     createUser: jest.fn(),
+  };
+
+  const mockRolesService = {
+    findDefaultRole: jest.fn(),
+  };
+
+  const mockDataSource = {
+    createQueryRunner: jest.fn(() => ({
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      manager: {
+        save: jest.fn((entity, data) => {
+          const id = 'generated-uuid';
+          const saved = { id, ...data, roles: [] };
+          return Promise.resolve(saved);
+        }),
+        findOne: jest.fn(),
+        remove: jest.fn(),
+      },
+    })),
   };
 
   const mockConfigService = {
@@ -40,6 +66,14 @@ describe('AuthService', () => {
           useValue: mockUsersService,
         },
         {
+          provide: RolesService,
+          useValue: mockRolesService,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
+        },
+        {
           provide: ConfigService,
           useValue: mockConfigService,
         },
@@ -48,6 +82,7 @@ describe('AuthService', () => {
 
     authService = module.get<AuthService>(AuthService);
     usersService = module.get<UsersService>(UsersService);
+    rolesService = module.get<RolesService>(RolesService);
   });
 
   afterEach(() => {
@@ -155,11 +190,18 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('should create new user and return access token', async () => {
+    it('should create new user and return access token with user role', async () => {
       const registerDto = {
         email: 'newuser@example.com',
         name: 'New User',
         password: 'password123',
+      };
+
+      const mockDefaultRole = {
+        id: 'role-uuid',
+        name: 'user',
+        description: 'Regular user',
+        isDefault: true,
       };
 
       const mockCreatedUser = {
@@ -168,18 +210,33 @@ describe('AuthService', () => {
         name: registerDto.name,
         password: await bcrypt.hash(registerDto.password, 10),
         isActive: true,
+        roles: [mockDefaultRole],
       };
 
       mockUsersService.findOneByEmail.mockResolvedValue(null);
-      mockUsersService.createUser.mockResolvedValue(mockCreatedUser);
+      mockRolesService.findDefaultRole.mockResolvedValue(mockDefaultRole);
+
+      const mockQueryRunner = {
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        manager: {
+          create: jest.fn().mockReturnValue(mockCreatedUser),
+          save: jest.fn().mockResolvedValue(mockCreatedUser),
+        },
+      };
+      mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner as any);
 
       const result = await authService.register(registerDto);
 
       expect(result).toBeDefined();
       expect(result.access_token).toBeDefined();
       expect(result.user.email).toBe('newuser@example.com');
+      expect(result.user.roles).toBeDefined();
       expect(usersService.findOneByEmail).toHaveBeenCalledWith('newuser@example.com');
-      expect(usersService.createUser).toHaveBeenCalled();
+      expect(rolesService.findDefaultRole).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if email already exists', async () => {
@@ -200,6 +257,21 @@ describe('AuthService', () => {
       mockUsersService.findOneByEmail.mockResolvedValue(existingUser);
 
       await expect(authService.register(registerDto)).rejects.toThrow('Email already registered');
+    });
+
+    it('should throw InternalServerErrorException if default role not found', async () => {
+      const registerDto = {
+        email: 'newuser@example.com',
+        name: 'New User',
+        password: 'password123',
+      };
+
+      mockUsersService.findOneByEmail.mockResolvedValue(null);
+      mockRolesService.findDefaultRole.mockResolvedValue(null);
+
+      await expect(authService.register(registerDto)).rejects.toThrow(
+        'Default user role not found. Please run database seeding.',
+      );
     });
   });
 });

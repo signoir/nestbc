@@ -1,10 +1,12 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { User } from '../../users/user.entity';
+import { RolesService } from '../authorization/roles.service';
+import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -13,6 +15,8 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private rolesService: RolesService,
+    private dataSource: DataSource,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -63,9 +67,15 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     // Check if user already exists
     const existingUser = await this.usersService.findOneByEmail(registerDto.email);
-    
+
     if (existingUser) {
       throw new BadRequestException('Email already registered');
+    }
+
+    // Find the default 'user' role first (outside transaction)
+    const defaultRole = await this.rolesService.findDefaultRole();
+    if (!defaultRole) {
+      throw new InternalServerErrorException('Default user role not found. Please run database seeding.');
     }
 
     // Hash password
@@ -78,29 +88,50 @@ export class AuthService {
       name: registerDto.name,
       password: hashedPassword,
       isActive: true,
+      roles: [defaultRole],
     };
 
-    const user = await this.usersService.createUser(userData);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Generate JWT token
-    const payload = {
-      email: user.email,
-      sub: user.id,
-      name: user.name,
-    };
+    try {
+      // Create user with role within transaction
+      const user = queryRunner.manager.create(User, userData);
+      const savedUser = await queryRunner.manager.save(user);
 
-    const expiresIn = (this.configService.get('JWT_EXPIRES_IN') as string) || '1d';
+      await queryRunner.commitTransaction();
 
-    return {
-      access_token: this.jwtService.sign(payload, {
-        expiresIn: expiresIn as any,
-      }),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isActive: user.isActive,
-      },
-    };
+      // Generate JWT token
+      const payload = {
+        email: savedUser.email,
+        sub: savedUser.id,
+        name: savedUser.name,
+      };
+
+      const expiresIn = (this.configService.get('JWT_EXPIRES_IN') as string) || '1d';
+
+      return {
+        access_token: this.jwtService.sign(payload, {
+          expiresIn: expiresIn as any,
+        }),
+        user: {
+          id: savedUser.id,
+          email: savedUser.email,
+          name: savedUser.name,
+          isActive: savedUser.isActive,
+          roles: [{ id: defaultRole.id, name: defaultRole.name }],
+        },
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      console.error('Registration error:', err);
+      if (err instanceof BadRequestException || err instanceof InternalServerErrorException) {
+        throw err;
+      }
+      throw new InternalServerErrorException('Failed to register user');
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
