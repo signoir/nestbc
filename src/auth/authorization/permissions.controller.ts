@@ -26,7 +26,7 @@ import { AuthorizationGuard } from './guards/authorization.guard';
 import { RequireRule } from '../shared/decorators/require-rule.decorator';
 import { Action } from './casl/actions.enum';
 
-@ApiTags('permissions')
+@ApiTags('v1-permissions')
 @ApiBearerAuth('JWT')
 @Controller('permissions')
 @UseGuards(JwtAuthGuard, AuthorizationGuard)

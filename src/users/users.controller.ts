@@ -32,7 +32,7 @@ import { RequireAbility } from '../auth/shared/decorators/require-ability.decora
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
-@ApiTags('users')
+@ApiTags('v1-users')
 @ApiBearerAuth('JWT')
 @Controller('users')
 export class UsersController {

@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { DeprecationInterceptor } from './common/interceptors/deprecation.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,11 +14,22 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Enable API Versioning with /api/v1/, /api/v2/ prefix
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+    prefix: 'api/v',
+  });
+
+  // Register DeprecationInterceptor globally
+  app.useGlobalInterceptors(new DeprecationInterceptor());
+
   // Swagger/OpenAPI Configuration
   const config = new DocumentBuilder()
     .setTitle('nestbc API')
     .setDescription('The nestbc API documentation with RBAC/ABAC authorization system using CASL')
     .setVersion('1.0')
+    .addServer('http://localhost:3000/api/v1', 'API v1 Server')
     .addTag('auth', 'Authentication endpoints (login, register)')
     .addTag('users', 'User management endpoints')
     .addTag('roles', 'Role management endpoints')
@@ -36,13 +49,13 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  // Serve Swagger UI at /api
-  SwaggerModule.setup('api', app, document, {
+  // Serve Swagger UI at /docs (separate from API endpoints)
+  SwaggerModule.setup('docs', app, document, {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: 'nestbc API Docs',
     swaggerOptions: {
-      persistAuthorization: true, // Keep JWT token on refresh
-      filter: true, // Enable filtering endpoints
+      persistAuthorization: true,
+      filter: true,
       showRequestDuration: true,
     },
   });
@@ -50,7 +63,9 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`Swagger UI: http://localhost:${port}/api`);
-  console.log(`OpenAPI JSON: http://localhost:${port}/api-json`);
+  console.log(`Swagger UI (Documentation): http://localhost:${port}/docs`);
+  console.log(`OpenAPI JSON: http://localhost:${port}/docs-json`);
+  console.log(`API Versioning: URI-based (/api/v1/, /api/v2/, etc.)`);
+  console.log(`Example API Endpoint: http://localhost:${port}/api/v1/users`);
 }
 bootstrap();
